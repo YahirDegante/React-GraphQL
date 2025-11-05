@@ -15,6 +15,8 @@ const typeDefs = `
 
     type Mutation {
         createUser(name: String!, age: Int!, isMarried: Boolean!): User
+        updateUser(id: ID!, name: String, age: Int, isMarried: Boolean): User
+        deleteUser(id: ID!): DeleteResponse
     }
 
     type User {
@@ -22,6 +24,12 @@ const typeDefs = `
         name: String
         age: Int
         isMarried: Boolean
+    }
+
+    type DeleteResponse {
+        success: Boolean!
+        message: String!
+        deletedUser: User
     }
 `;
 
@@ -42,6 +50,43 @@ const resolvers = {
             };
             users.push(newUser);
             return newUser;
+        },
+        updateUser: (parent, args) => {
+            const userIndex = users.findIndex(user => user.id === args.id);
+            
+            if (userIndex === -1) {
+                throw new Error(`Usuario con id ${args.id} no encontrado`);
+            }
+            
+            // Actualizar solo los campos proporcionados
+            const updatedUser = {
+                ...users[userIndex],
+                ...(args.name && { name: args.name }),
+                ...(args.age && { age: args.age }),
+                ...(args.isMarried !== undefined && { isMarried: args.isMarried })
+            };
+            
+            users[userIndex] = updatedUser;
+            return updatedUser;
+        },
+        deleteUser: (parent, args) => {
+            const userIndex = users.findIndex(user => user.id === args.id);
+            
+            if (userIndex === -1) {
+                return {
+                    success: false,
+                    message: `Usuario con id ${args.id} no encontrado`,
+                    deletedUser: null
+                };
+            }
+            
+            const deletedUser = users.splice(userIndex, 1)[0];
+            
+            return {
+                success: true,
+                message: `Usuario ${deletedUser.name} eliminado correctamente`,
+                deletedUser: deletedUser
+            };
         }
     }
 }
